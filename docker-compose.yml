@@ -1,4 +1,32 @@
 services:
+  api:
+    build: ./api
+    container_name: api
+    ports:
+      - '3000:3000'
+    environment:
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: ${DB_ROOT_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+  web:
+    build: ./web
+    container_name: web_app
+    ports:
+      - '5173:5173'
+    depends_on:
+      - api
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+    stdin_open: true
+    tty: true
   mysql:
     image: mysql:latest
     environment:
@@ -8,6 +36,11 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   mysql_data:
